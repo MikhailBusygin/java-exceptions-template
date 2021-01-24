@@ -3,6 +3,7 @@ package com.epam.izh.rd.online.service;
 import com.epam.izh.rd.online.entity.User;
 import com.epam.izh.rd.online.repository.IUserRepository;
 import com.epam.izh.rd.online.repository.UserRepository;
+import com.epam.izh.rd.online.exception.*;
 
 public class UserService implements IUserService {
 
@@ -30,11 +31,26 @@ public class UserService implements IUserService {
      * @param user - даныне регистрирующегося пользователя
      */
     @Override
-    public User register(User user) {
+    public User register(User user) throws IllegalArgumentException, UserAlreadyRegisteredException, SimplePasswordException {
 
         //
         // Здесь необходимо реализовать перечисленные выше проверки
         //
+        if (
+                user.getLogin() == null || user.getPassword() == null ||
+                user.getLogin().equals("") || user.getPassword().equals(""))
+        {
+            throw new IllegalArgumentException("Ошибка в заполнении полей");
+        }
+
+        if (userRepository.findByLogin(user.getLogin()) != null) {
+            throw new UserAlreadyRegisteredException("Пользователь с логином " + user.getLogin() +
+                    " уже зарегистрирован");
+        }
+
+        if (user.getPassword().matches("-?[\\d]+")) {
+            throw new SimplePasswordException("Пароль не соответствует требованиям безопасности");
+        }
 
         // Если все проверки успешно пройдены, сохраняем пользователя в базу
         return userRepository.save(user);
@@ -58,13 +74,17 @@ public class UserService implements IUserService {
      *
      * @param login
      */
-    public void delete(String login) {
+    public void delete(String login) throws NotAccessException {
 
         // Здесь необходимо сделать доработку метод
+        try {
 
             userRepository.deleteByLogin(login);
 
-        // Здесь необходимо сделать доработку метода
+            // Здесь необходимо сделать доработку метода
+        } catch (UnsupportedOperationException uoe) {
+            throw new NotAccessException("Недостаточно прав для выполнения операции");
+        }
 
     }
 
